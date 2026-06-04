@@ -1,80 +1,80 @@
-# AWS Terraform Infrastructure Bootstrap
+# Despliegue de Infraestructura AWS con Terraform
 
-This repository contains the Terraform configuration to bootstrap a professional-grade AWS infrastructure deployment. It sets up a secure remote state backend in S3 with state locking in DynamoDB, and provisions a custom Virtual Private Cloud (VPC) network running an EC2 web server.
+Este repositorio contiene la configuración de Terraform para desplegar una infraestructura básica de grado profesional en AWS. Configura un estado remoto seguro en S3 con bloqueo de estado a través de DynamoDB, y provisiona una red VPC (Virtual Private Cloud) personalizada que ejecuta un servidor web EC2.
 
-## Architecture Diagram
+## Diagrama de Arquitectura
 
 ```mermaid
 graph TD
-    User[Developer IP] -->|SSH / Port 22| EC2[EC2 Instance: Ubuntu 22.04]
-    subgraph VPC [Custom VPC: 10.0.0.0/16]
-        subgraph Subnet [Public Subnet: 10.0.1.0/24]
+    User[IP Pública del Desarrollador] -->|SSH / Puerto 22| EC2[Instancia EC2: Ubuntu 22.04]
+    subgraph VPC [VPC Personalizada: 10.0.0.0/16]
+        subgraph Subnet [Subred Pública: 10.0.1.0/24]
             EC2
-            SG[Security Group: Port 22 Inbound] --> EC2
+            SG[Grupo de Seguridad: SSH Puerto 22] --> EC2
         end
-        IGW[Internet Gateway] --> RouteTable[Route Table: 0.0.0.0/0]
+        IGW[Internet Gateway] --> RouteTable[Tabla de Rutas: 0.0.0.0/0]
         RouteTable --> Subnet
     end
     
-    subgraph RemoteBackend [AWS Remote State]
-        S3[S3 Bucket: State Storage]
-        DynamoDB[DynamoDB Table: State Locking]
+    subgraph RemoteBackend [Estado Remoto AWS]
+        S3[S3 Bucket: Almacén de Estado]
+        DynamoDB[Tabla DynamoDB: Candado de Estado]
     end
 ```
 
-## Features
+## Características
 
-- **Secure Remote State Backend**: State is securely versioned and encrypted in an AWS S3 bucket.
-- **State Locking**: Concurrent execution prevention managed dynamically via a DynamoDB table.
-- **Custom Network Topology**: Isolated VPC with public subnet, routing tables, and internet gateway.
-- **Secure VM Instance**: EC2 instance dynamically querying the latest Ubuntu 22.04 LTS AMI and restricted to the developer's specific public IP address via Security Groups.
-- **Infrastructure as Code Best Practices**: Fully parameterized inputs using `variables.tf` and outputs exposed in `outputs.tf`.
+- **Estado Remoto Seguro**: El archivo de estado (`.tfstate`) se almacena de forma segura, encriptado y versionado en un bucket de AWS S3.
+- **Bloqueo de Estado**: Prevención de ejecuciones concurrentes gestionada dinámicamente mediante una tabla de DynamoDB para evitar corrupción de datos.
+- **Topología de Red Personalizada**: Creación de una VPC aislada con subred pública, tablas de enrutamiento y pasarela de Internet (Internet Gateway).
+- **Servidor Seguro**: Instancia EC2 que consulta dinámicamente la AMI oficial de Ubuntu 22.04 LTS más reciente y restringe el acceso SSH únicamente a la dirección IP pública del desarrollador.
+- **Buenas Prácticas de Infraestructura como Código**: Configuración parametrizada mediante `variables.tf` y valores de retorno expuestos en `outputs.tf`.
 
-## File Structure
+## Estructura del Proyecto
 
 ```text
-├── providers.tf         # Terraform version, AWS provider, and S3 backend configurations
-├── variables.tf         # Input variable declarations
-├── outputs.tf           # Resource output definitions
-├── terraform.tfvars.example # Template variable values (rename to terraform.tfvars and customize)
-├── main.tf              # Resource definitions (VPC, Subnet, EC2, S3, DynamoDB)
-└── .gitignore           # Safeguard rule configurations to prevent uploading sensitive data
+├── providers.tf         # Versión de Terraform, configuración del proveedor AWS y del backend S3
+├── variables.tf         # Declaración de variables de entrada
+├── outputs.tf           # Definición de outputs de salida del despliegue
+├── terraform.tfvars.example # Plantilla de variables (renombrar a terraform.tfvars y rellenar)
+├── main.tf              # Definición de recursos (VPC, Subred, EC2, S3, DynamoDB)
+└── .gitignore           # Reglas de exclusión de Git para proteger archivos sensibles
 ```
 
-## How to Run This Project
+## Cómo Ejecutar este Proyecto
 
-### 1. Prerequisites
-- [Terraform CLI](https://developer.hashicorp.com/terraform/downloads) (>= 1.5.0) installed locally.
-- [AWS CLI](https://aws.amazon.com/cli/) configured with appropriate IAM credentials.
+### 1. Requisitos Previos
+- [Terraform CLI](https://developer.hashicorp.com/terraform/downloads) (versión >= 1.5.0) instalado localmente.
+- [AWS CLI](https://aws.amazon.com/cli/) configurado con credenciales de IAM válidas.
 
-### 2. Configure Variables
-Rename the template variables file and customize with your parameters (e.g. S3 bucket unique name, your public IP):
+### 2. Configurar Variables
+Renombra la plantilla de variables y edítala con tus propios parámetros de red y nombres de recursos únicos:
 ```bash
 cp terraform.tfvars.example terraform.tfvars
 ```
 
-### 3. Initialize Workspace
-Download providers and initialize local state:
+### 3. Inicializar el Directorio de Trabajo
+Descarga los proveedores necesarios y prepara el entorno local:
 ```bash
 terraform init
 ```
 
-### 4. Create Backend & Network Resources
-Deploy the S3 bucket, DynamoDB table, and VPC network:
+### 4. Crear los Recursos de Red e Infraestructura
+Ejecuta la validación y despliega la VPC, el bucket S3 y la tabla DynamoDB:
 ```bash
 terraform validate
 terraform plan
 terraform apply
 ```
 
-### 5. Migrate State to S3 Backend
-Uncomment the `backend "s3"` block in `providers.tf` and run the migration:
+### 5. Migrar el Estado al Backend Remoto en S3
+Descomenta el bloque `backend "s3"` en el archivo `providers.tf` y ejecuta la migración automática:
 ```bash
 terraform init
 ```
 
-### 6. Verify Connection
-Check connectivity to the EC2 public IP using PowerShell:
+### 6. Verificar la Conexión
+Prueba la conectividad SSH al puerto 22 del servidor EC2 usando PowerShell:
 ```powershell
-Test-NetConnection -ComputerName <EC2_PUBLIC_IP> -Port 22
+Test-NetConnection -ComputerName <IP_PUBLICA_EC2> -Port 22
 ```
