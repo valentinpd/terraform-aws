@@ -34,3 +34,15 @@ variable "public_subnet_cidr" {
   description = "The CIDR block for the public subnet"
   default     = "10.0.1.0/24"
 }
+
+variable "instance_type" {
+  type        = string
+  description = "The type of EC2 instance to launch"
+  default     = "t2.micro"
+}
+
+variable "ssh_allowed_cidr" {
+  type        = string
+  description = "The CIDR block allowed to SSH into the EC2 instance"
+  default     = "0.0.0.0/0"
+}

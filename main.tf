@@ -101,3 +101,65 @@ resource "aws_route_table_association" "public_association" {
   subnet_id      = aws_subnet.public.id
   route_table_id = aws_route_table.public.id
 }
+
+# --- COMPUTE RESOURCES ---
+
+# Data source to query the latest Ubuntu 22.04 AMI
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical (Ubuntu owner ID in AWS)
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+
+  filter {
+    name   = "virtualization-type"
+    values = ["hvm"]
+  }
+}
+
+# Security Group for EC2 Server
+resource "aws_security_group" "web" {
+  name        = "${var.project_name}-ec2-sg"
+  description = "Allow inbound SSH traffic"
+  vpc_id      = aws_vpc.main.id
+
+  # Inbound: Allow SSH
+  ingress {
+    description = "SSH from allowed CIDR"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.ssh_allowed_cidr]
+  }
+
+  # Outbound: Allow everything
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "${var.project_name}-ec2-sg"
+  }
+}
+
+# EC2 Instance
+resource "aws_instance" "web" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type
+  subnet_id              = aws_subnet.public.id
+  vpc_security_group_ids = [aws_security_group.web.id]
+
+  # Assign public IP address on launch
+  associate_public_ip_address = true
+
+  tags = {
+    Name = "${var.project_name}-web-server"
+  }
+}
