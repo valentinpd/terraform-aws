@@ -8,8 +8,9 @@ terraform {
     }
   }
 
+  # Activamos el backend remoto apuntando al nuevo bucket privado
   backend "s3" {
-    bucket         = "ops-infra-bootstrap-tfstate-570017720133"
+    bucket         = "ops-infra-bootstrap-tfstate-valentin-unique"
     key            = "dev/terraform.tfstate"
     region         = "us-east-1"
     dynamodb_table = "ops-infra-bootstrap-tfstate-locks"
