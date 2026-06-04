@@ -1,0 +1,8 @@
+aws_region        = "us-east-1"
+environment       = "dev"
+project_name      = "your-project-name"
+state_bucket_name = "your-unique-s3-state-bucket-name"
+state_table_name  = "your-dynamodb-state-lock-table-name"
+
+vpc_cidr           = "10.0.0.0/16"
+public_subnet_cidr = "10.0.1.0/24"
