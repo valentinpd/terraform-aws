@@ -46,3 +46,13 @@ variable "ssh_allowed_cidr" {
   description = "The CIDR block allowed to SSH into the EC2 instance"
   default     = "0.0.0.0/0"
 }
+
+variable "lightsail_instance_name" {
+  type        = string
+  description = "The name of the Lightsail instance"
+}
+
+variable "lightsail_key_name" {
+  type        = string
+  description = "The name of the key pair for the Lightsail instance"
+}
