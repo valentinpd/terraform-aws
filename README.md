@@ -1,80 +1,95 @@
-# Despliegue de Infraestructura AWS con Terraform
+# Infraestructura AWS con Terraform (proyecto de aprendizaje)
 
-Este repositorio contiene la configuración de Terraform para desplegar una infraestructura básica de grado profesional en AWS. Configura un estado remoto seguro en S3 con bloqueo de estado a través de DynamoDB, y provisiona una red VPC (Virtual Private Cloud) personalizada que ejecuta un servidor web EC2.
+Proyecto **modular** de Terraform para desplegar una infraestructura básica de
+grado profesional en AWS:
 
-## Diagrama de Arquitectura
+- **Estado remoto** seguro en S3 (cifrado + versionado) con **bloqueo** en DynamoDB.
+- **Red** propia: VPC con subred pública, Internet Gateway y tabla de rutas.
+- **Cómputo**: instancia EC2 (Ubuntu 22.04) con acceso SSH restringido a tu IP.
+
+Todo está organizado en **módulos reutilizables** dentro de `modules/`, que es la
+forma más clara de aprender Terraform: cada módulo resuelve una cosa y el
+`main.tf` raíz solo los conecta.
+
+## Diagrama de arquitectura
 
 ```mermaid
 graph TD
-    User[IP Pública del Desarrollador] -->|SSH / Puerto 22| EC2[Instancia EC2: Ubuntu 22.04]
-    subgraph VPC [VPC Personalizada: 10.0.0.0/16]
-        subgraph Subnet [Subred Pública: 10.0.1.0/24]
+    User[IP pública del desarrollador] -->|SSH / Puerto 22| EC2[Instancia EC2: Ubuntu 22.04]
+    subgraph VPC [VPC: 10.0.0.0/16]
+        subgraph Subnet [Subred pública: 10.0.1.0/24]
             EC2
-            SG[Grupo de Seguridad: SSH Puerto 22] --> EC2
+            SG[Security Group: SSH solo desde tu IP] --> EC2
         end
-        IGW[Internet Gateway] --> RouteTable[Tabla de Rutas: 0.0.0.0/0]
+        IGW[Internet Gateway] --> RouteTable[Tabla de rutas: 0.0.0.0/0]
         RouteTable --> Subnet
     end
-    
-    subgraph RemoteBackend [Estado Remoto AWS]
-        S3[S3 Bucket: Almacén de Estado]
-        DynamoDB[Tabla DynamoDB: Candado de Estado]
+    subgraph RemoteBackend [Estado remoto]
+        S3[S3: almacén del estado]
+        DynamoDB[DynamoDB: lock del estado]
     end
 ```
 
-## Características
-
-- **Estado Remoto Seguro**: El archivo de estado (`.tfstate`) se almacena de forma segura, encriptado y versionado en un bucket de AWS S3.
-- **Bloqueo de Estado**: Prevención de ejecuciones concurrentes gestionada dinámicamente mediante una tabla de DynamoDB para evitar corrupción de datos.
-- **Topología de Red Personalizada**: Creación de una VPC aislada con subred pública, tablas de enrutamiento y pasarela de Internet (Internet Gateway).
-- **Servidor Seguro**: Instancia EC2 que consulta dinámicamente la AMI oficial de Ubuntu 22.04 LTS más reciente y restringe el acceso SSH únicamente a la dirección IP pública del desarrollador.
-- **Buenas Prácticas de Infraestructura como Código**: Configuración parametrizada mediante `variables.tf` y valores de retorno expuestos en `outputs.tf`.
-
-## Estructura del Proyecto
+## Estructura del proyecto
 
 ```text
-├── providers.tf         # Versión de Terraform, configuración del proveedor AWS y del backend S3
-├── variables.tf         # Declaración de variables de entrada
-├── outputs.tf           # Definición de outputs de salida del despliegue
-├── terraform.tfvars.example # Plantilla de variables (renombrar a terraform.tfvars y rellenar)
-├── main.tf              # Definición de recursos (VPC, Subred, EC2, S3, DynamoDB)
-└── .gitignore           # Reglas de exclusión de Git para proteger archivos sensibles
+.
+├── providers.tf              # Versión de Terraform, proveedor AWS y backend S3
+├── main.tf                   # Root: solo "llama" a los módulos y los conecta
+├── variables.tf              # Declaración de variables de entrada
+├── outputs.tf                # Salidas del despliegue
+├── terraform.tfvars          # Tus valores reales (NO se sube a git)
+├── terraform.tfvars.example  # Plantilla para crear terraform.tfvars
+├── moved.tf                  # Temporal: migración de recursos a módulos (ver nota)
+└── modules/
+    ├── state-backend/        # Bucket S3 + tabla DynamoDB (estado remoto)
+    ├── networking/           # VPC, subred, internet gateway, rutas
+    └── compute/              # Security Group + instancia EC2
 ```
 
-## Cómo Ejecutar este Proyecto
+Cada módulo sigue la misma convención: `main.tf` (recursos), `variables.tf`
+(entradas), `outputs.tf` (salidas) y su propio `README.md`.
 
-### 1. Requisitos Previos
-- [Terraform CLI](https://developer.hashicorp.com/terraform/downloads) (versión >= 1.5.0) instalado localmente.
-- [AWS CLI](https://aws.amazon.com/cli/) configurado con credenciales de IAM válidas.
+## Cómo usar este proyecto
 
-### 2. Configurar Variables
-Renombra la plantilla de variables y edítala con tus propios parámetros de red y nombres de recursos únicos:
+### 1. Requisitos previos
+- [Terraform CLI](https://developer.hashicorp.com/terraform/downloads) >= 1.5.0
+- [AWS CLI](https://aws.amazon.com/cli/) con credenciales válidas configuradas
+
+### 2. Configurar variables
 ```bash
 cp terraform.tfvars.example terraform.tfvars
+# Edita terraform.tfvars: pon tu IP pública en ssh_allowed_cidr (curl ifconfig.me)
 ```
 
-### 3. Inicializar el Directorio de Trabajo
-Descarga los proveedores necesarios y prepara el entorno local:
+### 3. Inicializar
 ```bash
 terraform init
 ```
 
-### 4. Crear los Recursos de Red e Infraestructura
-Ejecuta la validación y despliega la VPC, el bucket S3 y la tabla DynamoDB:
+### 4. Revisar y aplicar
 ```bash
-terraform validate
-terraform plan
-terraform apply
+terraform fmt        # formatea el código
+terraform validate   # valida la sintaxis
+terraform plan       # muestra qué cambiará (no aplica nada)
+terraform apply      # crea/actualiza la infraestructura
 ```
 
-### 5. Migrar el Estado al Backend Remoto en S3
-Descomenta el bloque `backend "s3"` en el archivo `providers.tf` y ejecuta la migración automática:
+### 5. Verificar la conexión SSH
 ```bash
-terraform init
+ssh -i ~/.ssh/tu_clave ubuntu@$(terraform output -raw ec2_public_ip)
 ```
 
-### 6. Verificar la Conexión
-Prueba la conectividad SSH al puerto 22 del servidor EC2 usando PowerShell:
-```powershell
-Test-NetConnection -ComputerName <IP_PUBLICA_EC2> -Port 22
-```
+## Nota sobre `moved.tf`
+
+Este proyecto migró sus recursos desde un único `main.tf` monolítico a módulos.
+Los bloques `moved` reubican los recursos en el estado **sin destruirlos**. Una
+vez ejecutado `terraform apply` con la migración aplicada, `moved.tf` se puede
+borrar sin problema.
+
+## Nota sobre el VPS de desarrollo
+
+El VPS de AWS Lightsail desde el que se trabaja **no** lo gestiona este proyecto
+de Terraform, y es intencionado: una máquina de gestión no debería gestionarse a
+sí misma con el mismo estado que ejecuta sobre ella. Se administra aparte (consola
+de Lightsail / AWS CLI).

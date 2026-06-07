@@ -1,24 +1,31 @@
+###############################################################################
+# Outputs del root module
+#
+# Valores útiles que Terraform muestra al terminar (y que se pueden consultar
+# con `terraform output`). Cada uno se obtiene de la salida de su módulo.
+###############################################################################
+
 output "state_bucket_arn" {
-  value       = aws_s3_bucket.terraform_state.arn
-  description = "The ARN of the S3 bucket used for state storage"
+  value       = module.state_backend.bucket_arn
+  description = "ARN del bucket S3 que almacena el estado de Terraform."
 }
 
 output "state_dynamodb_table_name" {
-  value       = aws_dynamodb_table.terraform_locks.name
-  description = "The name of the DynamoDB table used for state locking"
+  value       = module.state_backend.dynamodb_table_name
+  description = "Nombre de la tabla DynamoDB usada para el bloqueo del estado."
 }
 
 output "vpc_id" {
-  value       = aws_vpc.main.id
-  description = "The ID of the custom VPC"
+  value       = module.networking.vpc_id
+  description = "ID de la VPC creada."
 }
 
 output "public_subnet_id" {
-  value       = aws_subnet.public.id
-  description = "The ID of the public subnet"
+  value       = module.networking.public_subnet_id
+  description = "ID de la subred pública."
 }
 
 output "ec2_public_ip" {
-  value       = aws_instance.web.public_ip
-  description = "The public IP of the web server"
+  value       = module.compute.ec2_public_ip
+  description = "IP pública de la instancia EC2."
 }
