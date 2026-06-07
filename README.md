@@ -3,7 +3,7 @@
 Proyecto **modular** de Terraform para desplegar una infraestructura básica de
 grado profesional en AWS:
 
-- **Estado remoto** seguro en S3 (cifrado + versionado) con **bloqueo** en DynamoDB.
+- **Estado remoto** seguro en S3 (cifrado + versionado) con **bloqueo nativo de S3** (`use_lockfile`, sin DynamoDB).
 - **Red** propia: VPC con subred pública, Internet Gateway y tabla de rutas.
 - **Cómputo**: instancia EC2 (Ubuntu 22.04) con acceso SSH restringido a tu IP.
 
@@ -25,8 +25,7 @@ graph TD
         RouteTable --> Subnet
     end
     subgraph RemoteBackend [Estado remoto]
-        S3[S3: almacén del estado]
-        DynamoDB[DynamoDB: lock del estado]
+        S3[S3: estado .tfstate + lock nativo .tflock]
     end
 ```
 
@@ -42,7 +41,7 @@ graph TD
 ├── terraform.tfvars.example  # Plantilla para crear terraform.tfvars
 ├── moved.tf                  # Temporal: migración de recursos a módulos (ver nota)
 └── modules/
-    ├── state-backend/        # Bucket S3 + tabla DynamoDB (estado remoto)
+    ├── state-backend/        # Bucket S3 con lock nativo (estado remoto)
     ├── networking/           # VPC, subred, internet gateway, rutas
     └── compute/              # Security Group + instancia EC2
 ```

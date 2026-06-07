@@ -10,11 +10,6 @@ output "state_bucket_arn" {
   description = "ARN del bucket S3 que almacena el estado de Terraform."
 }
 
-output "state_dynamodb_table_name" {
-  value       = module.state_backend.dynamodb_table_name
-  description = "Nombre de la tabla DynamoDB usada para el bloqueo del estado."
-}
-
 output "vpc_id" {
   value       = module.networking.vpc_id
   description = "ID de la VPC creada."

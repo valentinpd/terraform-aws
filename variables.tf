@@ -37,11 +37,6 @@ variable "state_bucket_name" {
   description = "Nombre globalmente único del bucket S3 que guarda el estado de Terraform."
 }
 
-variable "state_table_name" {
-  type        = string
-  description = "Nombre de la tabla DynamoDB usada para el bloqueo (lock) del estado."
-}
-
 # --- Red (módulo networking) ---
 
 variable "vpc_cidr" {

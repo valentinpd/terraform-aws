@@ -11,7 +11,6 @@ module "state_backend" {
   source            = "./modules/state-backend"
   project_name      = var.project_name
   state_bucket_name = var.state_bucket_name
-  state_table_name  = var.state_table_name
 }
 
 # 2) Red: VPC, subred pública, internet gateway y tabla de rutas.

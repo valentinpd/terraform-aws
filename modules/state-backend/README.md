@@ -9,27 +9,28 @@ Crea la infraestructura donde Terraform guarda su **estado remoto** de forma seg
   - Versionado (historial para recuperar)
   - Acceso público bloqueado
   - `prevent_destroy` (no se puede borrar por accidente)
-- **Tabla DynamoDB** para el *lock* del estado (evita ejecuciones simultáneas).
 
-> Nota: estos recursos son el "soporte" del backend definido en `providers.tf`.
-> Existe una dependencia de arranque (huevo/gallina) entre crearlos y usarlos
-> como backend; por eso, en un proyecto nuevo, se crean primero y luego se
-> activa el backend `s3`.
+El **bloqueo (lock)** del estado no necesita un recurso aparte: lo hace el propio
+S3 con un fichero `.tflock` (`use_lockfile = true` en `providers.tf`), gracias a
+las escrituras condicionales de S3. Antes esto se hacía con una tabla DynamoDB.
+
+> Nota: este bucket es el "soporte" del backend definido en `providers.tf`.
+> Existe una dependencia de arranque (huevo/gallina) entre crearlo y usarlo como
+> backend; por eso, en un proyecto nuevo, se crea primero y luego se activa el
+> backend `s3`.
 
 ## Variables de entrada
 
-| Nombre              | Tipo   | Descripción                                  |
-| ------------------- | ------ | -------------------------------------------- |
-| `project_name`      | string | Prefijo para nombres/etiquetas.              |
-| `state_bucket_name` | string | Nombre global único del bucket S3.           |
-| `state_table_name`  | string | Nombre de la tabla DynamoDB de bloqueo.      |
+| Nombre              | Tipo   | Descripción                        |
+| ------------------- | ------ | ---------------------------------- |
+| `project_name`      | string | Prefijo para nombres/etiquetas.    |
+| `state_bucket_name` | string | Nombre global único del bucket S3. |
 
 ## Salidas (outputs)
 
-| Nombre                | Descripción                          |
-| --------------------- | ------------------------------------ |
-| `bucket_arn`          | ARN del bucket S3 del estado.        |
-| `dynamodb_table_name` | Nombre de la tabla DynamoDB de lock. |
+| Nombre       | Descripción                   |
+| ------------ | ----------------------------- |
+| `bucket_arn` | ARN del bucket S3 del estado. |
 
 ## Ejemplo de uso
 
@@ -38,6 +39,5 @@ module "state_backend" {
   source            = "./modules/state-backend"
   project_name      = var.project_name
   state_bucket_name = var.state_bucket_name
-  state_table_name  = var.state_table_name
 }
 ```

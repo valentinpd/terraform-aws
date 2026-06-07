@@ -9,9 +9,8 @@ aws_region   = "us-east-1"
 environment  = "dev"
 project_name = "mi-proyecto"
 
-# --- Backend de estado (los nombres deben coincidir con providers.tf) ---
+# --- Backend de estado (el nombre debe coincidir con providers.tf) ---
 state_bucket_name = "nombre-bucket-s3-unico-global"
-state_table_name  = "nombre-tabla-dynamodb-locks"
 
 # --- Red ---
 vpc_cidr           = "10.0.0.0/16"
